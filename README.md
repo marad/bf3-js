@@ -17,7 +17,7 @@ Want to use it?
 ---------------
 No problem just four steps:
 
-1) Clone the repository
-2) Do `npm install`
-3) Setup `serverIp`, `serverPort` and `adminPassword` in `main.js` file.
-4) Run it with `node main` and start typing commands to your server :)
+1. Clone the repository
+2. Do `npm install`
+3. Setup `serverIp`, `serverPort` and `adminPassword` in `main.js` file.
+4. Run it with `node main` and start typing commands to your server :)
