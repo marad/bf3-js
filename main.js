@@ -35,10 +35,14 @@ var sequence = 0;
 
 function handleInput() {
   rl.question("> ", function(commands) {
-    c.sendCommand(commands, function(response) {
+    var commandSent = c.sendCommand(commands, function(response) {
       console.log(response);
       setTimeout(handleInput(), 0);
     });
+
+    if(!commandSent) {
+      setTimeout(handleInput(), 0);
+    }
   });
 }
 
