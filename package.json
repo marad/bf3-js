@@ -1,0 +1,7 @@
+{
+  "name": "bf-client",
+  "version": "0.0.1",
+  "dependencies": {
+    "shell-quote": "~1.4.1"
+  }
+}
