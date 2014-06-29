@@ -1,27 +1,17 @@
 var Client = require("./bfclient").Client;
+var login = require("./login");
 
-var serverIp = "";
-var serverPort = 0;
-var adminPassword = "";
+var serverIp = login.serverIp;
+var serverPort = login.serverPort;
+var adminPassword = login.adminPassword;
 
 var c = new Client();
 c.connect(serverIp, serverPort);
 
-c.sendCommand("login.plainText " + adminPassword, function(loginStatus) {
-  console.log('Login status:', loginStatus);
-  //c.sendCommand("admin.eventsEnabled true");
-  c.sendCommand("listPlayers all", function(msg) {
-    console.log("Currently playing:");
-    msg.players.forEach(function(player) {
-      console.log("\t" + player.name);
-    });
-  });
-});
+var cmd = function(command) {
+  return c.sendCommand.bind(c, command);;
+}
 
-
-c.on("serverEvent", function(data) {
-  console.log(data);
-});
 
 // INPUT HANDLING
 var readline = require('readline');
@@ -34,16 +24,32 @@ var rl = readline.createInterface({
 var sequence = 0;
 
 function handleInput() {
-  rl.question("> ", function(commands) {
-    var commandSent = c.sendCommand(commands, function(response) {
-      console.log(response);
-      setTimeout(handleInput(), 0);
-    });
-
-    if(!commandSent) {
-      setTimeout(handleInput(), 0);
-    }
+  rl.question("> ", function(command) {
+    c.sendCommand(command)
+      .then(console.log, function(error) {
+        console.log(error);
+      })
+      .finally(setTimeout.bind(this, handleInput, 0));
   });
 }
 
-handleInput();
+
+// LOGIN, SHOW CURRENT PLAYERS AND START HANDLING USER INPUT
+c.sendCommand("login.plainText " + adminPassword)
+  .then(console.log.bind(this, "Login status:"))
+  .then(cmd("listPlayers all"))
+  .then(function(playerList) {
+    console.log("Now playing: ");
+    playerList.players.forEach(function(player) {
+      console.log("\t" + player.name);
+    });
+  })
+  .then(function() {
+    handleInput();
+  })
+  .done();
+
+// REGISTER SERVER EVENT HANDLER
+c.on("serverEvent", function(data) {
+  console.log(data);
+});

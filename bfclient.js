@@ -1,6 +1,7 @@
 var net = require('net');
 var proto = require('./bfpacket');
 var parse = require('shell-quote').parse;
+var Q = require('q');
 
 function ArrayTokenizer(array) {
   var self = this;
@@ -422,12 +423,17 @@ function Client() {
       var seqData = self.sequenceData[msg.sequence];
       if (seqData) {
         var reader = READERS[seqData.command];
+        var status = statusReader.read(msg.words);
         if (reader && reader.read) {
-          //console.log("Reading ", msg.words);
           msg = reader.read(msg.words);
         }
-        if (seqData.callback) {
-          seqData.callback(msg);
+
+        if (seqData.deferred) {
+          if (status !== "OK") {
+            seqData.deferred.reject(status);
+          } else {
+            seqData.deferred.resolve(msg);
+          }
         }
         delete self.sequenceData[msg.sequence];
       }
@@ -451,11 +457,11 @@ function Client() {
     self.packetCollecter.addListener(decodeData);
   }
 
-  this.sendCommand = function(command, callback) {
-    if (command.length <= 0) {
-      return false;
+  this.sendCommand = function(command) {
+    var deferred = Q.defer();
+    if (!command || command.length <= 0) {
+      deferred.reject(new Error("No command specified"));
     }
-
 
     var seq = self.sequence;
     var args = [seq];
@@ -464,18 +470,16 @@ function Client() {
       args.push(commandArgs[i]);
     }
 
-    if (typeof callback === 'function') {
-      self.sequenceData[seq] =  {
-        command: commandArgs[0],
-        callback: callback,
-      };
-    }
+    self.sequenceData[seq] =  {
+      command: commandArgs[0],
+      deferred: deferred
+    };
 
 
     var packet = proto.createRequest.apply(proto, args);
     self.client.write(packet);
     self.sequence += 1;
-    return true;
+    return deferred.promise;
   }
 
   this.on = function(eventName, handlerCallback) {
