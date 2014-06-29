@@ -12,7 +12,6 @@ var cmd = function(command) {
   return c.sendCommand.bind(c, command);;
 }
 
-
 // INPUT HANDLING
 var readline = require('readline');
 
@@ -51,5 +50,18 @@ c.sendCommand("login.plainText " + adminPassword)
 
 // REGISTER SERVER EVENT HANDLER
 c.on("serverEvent", function(data) {
-  console.log(data);
+  if( data.eventName === "punkBuster.onMessage") {
+    return;
+  }
+
+  var logLine = "";
+  for (var p in data) {
+    if (p === "eventName") {
+      continue;
+    }
+
+    logLine += " " + p + ": " + JSON.stringify(data[p]);
+  }
+
+  console.log(data.eventName, logLine);
 });
